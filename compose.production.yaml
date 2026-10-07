@@ -1,0 +1,121 @@
+name: forma-production
+x-hardening: &hardening
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  pids_limit: 128
+  restart: unless-stopped
+services:
+  caddy:
+    image: caddy:2-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
+    environment:
+      SITE_HOST: ${SITE_HOST:?Set SITE_HOST}
+      TLS_EMAIL: ${TLS_EMAIL:?Set TLS_EMAIL}
+    ports: ["80:80", "443:443", "443:443/udp"]
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [edge]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 256m
+    restart: unless-stopped
+  web:
+    <<: *hardening
+    build: ./web
+    environment:
+      APP_ENV: production
+      SITE_ORIGIN: https://${SITE_HOST}
+      ORIGIN: https://${SITE_HOST}
+      API_URL: http://api:8081
+      CATALOG_SOURCE: api
+      BFF_SHARED_SECRET: ${BFF_SHARED_SECRET:?Set BFF_SHARED_SECRET}
+      ADDRESS_HEADER: X-Forwarded-For
+      XFF_DEPTH: "1"
+      BODY_SIZE_LIMIT: "32768"
+    networks: [edge, backend]
+    tmpfs: ["/tmp:size=16m,mode=1777"]
+    mem_limit: 512m
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/',{headers:{host:process.env.SITE_ORIGIN.replace('https://',''),'X-Forwarded-For':'127.0.0.1'}}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+  api:
+    <<: *hardening
+    build: ./api
+    environment:
+      APP_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?Set runtime DATABASE_URL with verify-full}
+      HTTP_ADDRESS: 0.0.0.0:8081
+      AUTO_MIGRATE: "false"
+      ENABLE_API_DOCS: "false"
+      LOG_LEVEL: info
+      CORS_ORIGINS: https://${SITE_HOST}
+      SITE_ORIGIN: https://${SITE_HOST}
+      BFF_SHARED_SECRET: ${BFF_SHARED_SECRET}
+      METRICS_TOKEN: ${METRICS_TOKEN:?Set METRICS_TOKEN}
+      SMTP_HOST: ${SMTP_HOST:?Set SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_TLS_MODE: ${SMTP_TLS_MODE:-starttls}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:?Set SMTP_FROM}
+      EMAIL_OUTBOX_KEY: ${EMAIL_OUTBOX_KEY:?Set EMAIL_OUTBOX_KEY}
+      PAYMENT_SIMULATED_OUTCOME: approved
+    networks: [backend, outbound]
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8081/health/ready"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+  migrate:
+    profiles: [tools]
+    build: ./api
+    entrypoint: /usr/local/bin/forma-migrate
+    environment:
+      APP_ENV: production
+      DATABASE_URL: ${MIGRATION_DATABASE_URL:?Set migration DATABASE_URL}
+      RUNTIME_DB_ROLE: ${RUNTIME_DB_ROLE:?Set existing restricted database role}
+    networks: [outbound]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+  backup:
+    profiles: [tools]
+    build: ./deploy/backup
+    environment:
+      BACKUP_DATABASE_URL: ${BACKUP_DATABASE_URL:-}
+      BACKUP_AGE_RECIPIENT: ${BACKUP_AGE_RECIPIENT:-}
+    volumes: ["${BACKUP_DIRECTORY_HOST:-./backups}:/backups"]
+    networks: [outbound]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+  prometheus:
+    profiles: [monitoring]
+    image: prom/prometheus@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.retention.time=30d"]
+    volumes:
+      - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./deploy/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ./deploy/metrics-token:/run/secrets/metrics-token:ro
+      - prometheus_data:/prometheus
+    networks: [backend]
+    ports: ["127.0.0.1:9090:9090"]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 512m
+    restart: unless-stopped
+networks:
+  edge:
+  backend:
+    internal: true
+  outbound:
+volumes:
+  caddy_data:
+  caddy_config:
+  prometheus_data:

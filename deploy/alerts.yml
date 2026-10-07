@@ -1,0 +1,28 @@
+groups:
+  - name: forma
+    rules:
+      - alert: FormaApiUnavailable
+        expr: up{job="forma-api"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations: {summary: "API da Forma indisponível"}
+      - alert: FormaServerErrors
+        expr: rate(forma_http_errors_total[5m]) / clamp_min(rate(forma_http_requests_total[5m]), 0.01) > 0.05
+        for: 5m
+        labels: {severity: critical}
+        annotations: {summary: "Taxa elevada de erros do servidor"}
+      - alert: FormaEmailFailed
+        expr: forma_email_failed > 0
+        for: 1m
+        labels: {severity: critical}
+        annotations: {summary: "E-mails esgotaram as tentativas de envio"}
+      - alert: FormaEmailDelayed
+        expr: forma_email_oldest_seconds > 600
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: "Fila de e-mail atrasada"}
+      - alert: FormaReservationMaintenanceDelayed
+        expr: forma_expired_reservations > 0
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: "Reservas vencidas aguardam liberação"}

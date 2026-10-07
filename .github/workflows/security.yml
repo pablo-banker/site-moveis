@@ -1,0 +1,45 @@
+name: Security and integration
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+        env:
+          POSTGRES_USER: forma
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: forma
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U forma" --health-interval 5s --health-timeout 3s --health-retries 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: api/go.mod
+          cache-dependency-path: api/go.sum
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci && npm run check && npm run build && npm audit
+        working-directory: web
+      - run: go test -race ./... && go vet ./...
+        working-directory: api
+        env:
+          TEST_DATABASE_URL: postgres://forma:ci-only-password@127.0.0.1:5432/forma?sslmode=disable
+      - run: go install golang.org/x/vuln/cmd/govulncheck@v1.8.0 && govulncheck ./...
+        working-directory: api
+      - run: docker build -t forma-api:ci api && docker build -t forma-web:ci web && docker build -t forma-backup:ci deploy/backup
+      - name: Scan final images
+        run: |
+          mkdir -p /tmp/forma-images
+          docker save forma-api:ci -o /tmp/forma-images/api.tar
+          docker save forma-web:ci -o /tmp/forma-images/web.tar
+          docker save forma-backup:ci -o /tmp/forma-images/backup.tar
+          docker run --rm -e GOMAXPROCS=2 -v /tmp/forma-images:/scan:ro aquasec/trivy@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa image --scanners vuln --exit-code 1 --severity HIGH,CRITICAL --input /scan/api.tar
+          docker run --rm -e GOMAXPROCS=2 -v /tmp/forma-images:/scan:ro aquasec/trivy@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa image --scanners vuln --exit-code 1 --severity HIGH,CRITICAL --input /scan/web.tar
+          docker run --rm -e GOMAXPROCS=2 -v /tmp/forma-images:/scan:ro aquasec/trivy@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa image --scanners vuln --exit-code 1 --severity HIGH,CRITICAL --input /scan/backup.tar

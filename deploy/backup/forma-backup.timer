@@ -1,0 +1,9 @@
+[Unit]
+Description=Forma daily encrypted backup
+[Timer]
+OnCalendar=*-*-* 03:00:00 UTC
+Persistent=true
+RandomizedDelaySec=5m
+Unit=forma-backup.service
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,24 @@
+node_modules/
+.svelte-kit/
+build/
+.env
+.env.*
+!.env.example
+.DS_Store
+
+api/bin/
+api/coverage*
+
+*.dump
+*.dump.age
+*.partial
+*.agekey
+deploy/metrics-token
+!deploy/.env.production.example
+backups/
+deploy/alertmanager.yml
+
+# Local editor and Python artifacts
+.idea/
+__pycache__/
+*.pyc

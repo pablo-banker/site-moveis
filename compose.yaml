@@ -1,0 +1,54 @@
+name: forma
+services:
+  postgres:
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    environment:
+      POSTGRES_USER: forma
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-forma_local}
+      POSTGRES_DB: forma
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - forma_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U forma -d forma"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  api:
+    build: ./api
+    environment:
+      DATABASE_URL: postgres://forma:${POSTGRES_PASSWORD:-forma_local}@postgres:5432/forma?sslmode=disable
+      HTTP_ADDRESS: 0.0.0.0:8081
+      AUTO_MIGRATE: "true"
+      LOG_LEVEL: info
+      CORS_ORIGINS: http://127.0.0.1:5173,http://localhost:5173
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      SMTP_TLS_MODE: none
+      SMTP_FROM: Forma <conta@localhost>
+      SITE_ORIGIN: http://127.0.0.1:5173
+    ports:
+      - "127.0.0.1:8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8081/health/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 128
+    mem_limit: 512m
+    restart: unless-stopped
+  mailpit:
+    image: axllent/mailpit@sha256:b68349e3a014b90c5610bfb26b2ae36f3892d7b8cf25ee140c6c71c98d2fcf48
+    ports: ["127.0.0.1:8025:8025"]
+    environment:
+      MP_MAX_MESSAGES: "500"
+    restart: unless-stopped
+volumes:
+  forma_postgres:

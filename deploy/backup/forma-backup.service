@@ -1,0 +1,10 @@
+[Unit]
+Description=Forma encrypted database backup
+After=docker.service network-online.target
+Requires=docker.service
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/forma
+UMask=0077
+ExecStart=/usr/bin/docker compose --env-file deploy/.env.production -f compose.production.yaml run --rm backup
+TimeoutStartSec=1h

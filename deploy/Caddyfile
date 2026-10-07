@@ -1,0 +1,14 @@
+{
+	email {$TLS_EMAIL}
+	admin off
+}
+{$SITE_HOST} {
+	encode zstd gzip
+	request_body {
+		max_size 32KB
+	}
+	reverse_proxy web:3000 {
+		# Only Caddy can reach web. Overwrite the client-supplied IP header.
+		header_up X-Forwarded-For {remote_host}
+	}
+}

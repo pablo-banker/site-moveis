@@ -1,0 +1,18 @@
+# Render these placeholders to a separate private alertmanager.yml (mode 600).
+# Prometheus must point alerting.alertmanagers to the configured Alertmanager.
+global:
+  smtp_smarthost: smtp.example.com:587
+  smtp_from: infraestrutura@example.com
+  smtp_auth_username: CONFIGURE_SMTP_USER
+  smtp_auth_password: CONFIGURE_SMTP_PASSWORD
+  smtp_require_tls: true
+route:
+  receiver: operations
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+receivers:
+  - name: operations
+    email_configs:
+      - to: responsavel@example.com
+        send_resolved: true
