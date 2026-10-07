@@ -1,3 +1,4 @@
+```text
  _____  ___  ____  __  __    _
 |  ___|/ _ \|  _ \|  \/  |  / \
 | |_  | | | | |_) | |\/| | / _ \
@@ -5,6 +6,7 @@
 |_|    \___/|_| \_\_|  |_/_/   \_\
 
           Uma nova forma de habitar.
+```
 
 Uma loja full-stack com identidade minimalista, cantos arredondados e uma experiência editorial: ambientes, histórias das peças, animações por scroll e parallax em camadas.
 
