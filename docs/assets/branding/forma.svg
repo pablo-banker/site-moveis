@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="300" viewBox="0 0 1000 300" role="img" aria-labelledby="title desc">
+  <title id="title">Forma</title>
+  <desc id="desc">Logo FORMA em letras brancas de blocos, com contornos deslocados sobre fundo grafite.</desc>
+  <rect width="1000" height="300" fill="#171717"/>
+  <defs>
+    <g id="word" fill-rule="evenodd">
+      <path transform="translate(0 0)" d="M0 0H104V28H28V64H88V92H28V160H0Z"/>
+      <path transform="translate(132 0)" d="M16 0H96V12H112V148H96V160H16V148H0V12H16ZM28 28V132H84V28Z"/>
+      <path transform="translate(272 0)" d="M0 0H92V12H108V72H92V88H76V104H92V120H108V160H76V132H60V116H44V100H28V160H0ZM28 28V72H76V28Z"/>
+      <path transform="translate(408 0)" d="M0 160V0H28V16H44V32H60V16H76V0H104V160H76V60H60V84H44V60H28V160Z"/>
+      <path transform="translate(540 0)" d="M0 160V32H16V16H32V0H80V16H96V32H112V160H84V104H28V160ZM28 76H84V44H68V28H44V44H28Z"/>
+    </g>
+  </defs>
+  <g transform="translate(168 52)">
+    <use href="#word" transform="translate(12 12)" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.28"/>
+    <use href="#word" transform="translate(6 6)" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.55"/>
+    <use href="#word" fill="#fff"/>
+  </g>
+  <text x="500" y="263" text-anchor="middle" fill="#b5b5b5" font-family="ui-monospace, monospace" font-size="17" letter-spacing="1">Uma nova forma de habitar.</text>
+</svg>

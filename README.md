@@ -1,12 +1,4 @@
-```text
- _____  ___  ____  __  __    _
-|  ___|/ _ \|  _ \|  \/  |  / \
-| |_  | | | | |_) | |\/| | / _ \
-|  _| | |_| |  _ <| |  | |/ ___ \
-|_|    \___/|_| \_\_|  |_/_/   \_\
-
-          Uma nova forma de habitar.
-```
+![Forma — Uma nova forma de habitar.](docs/assets/branding/forma.svg)
 
 Uma loja full-stack com identidade minimalista, cantos arredondados e uma experiência editorial: ambientes, histórias das peças, animações por scroll e parallax em camadas.
 
